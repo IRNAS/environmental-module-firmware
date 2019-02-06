@@ -17,7 +17,7 @@
 #define CAN_SPEED CAN_125KBPS       // CAN_125KBPS
 #define CAN_MHZ   MCP_16MHZ          // MCP_16MHZ, MCP_20MHZ
 
-//CHANGE BELOW FOR  MODULES ACCORDINGLY 0x100-0x400
+//CHANGE BELOW FOR  MODULES ACCORDINGLY 0x100-0x400, i.e. for module 1 set 0x100, for module 2 set 0x200 ,...
 #define SET_CAN_ID 0x100
 
 #define CAN_SAFETY_MARGIN 180         // in minutes
