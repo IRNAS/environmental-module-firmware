@@ -8,8 +8,9 @@
 bool ANEMOMETER::setup() {
 
     pinMode(PIN, INPUT);
+    pinMode(EN_PIN, OUTPUT);
     analogReadResolution(12);
-
+    
     return read_windspeed();
 
 } // end of setup()
@@ -73,18 +74,27 @@ bool ANEMOMETER::exec_timer() {
  *  Description:    read the windspeed
  */
 bool ANEMOMETER::read_windspeed() {
-    int an_data         = analogRead(PIN);
-
-    // out of range
-    if(an_data < 45 || an_data > 4000) {
+    digitalWrite(EN_PIN, HIGH);
+    delay(300);
+    float value = 0;
+    //read values a while and average
+    for(int i=0; i<256; i++){
+      value+=analogRead(PIN);
+      delay(1);
+    }
+    //calculate average and convert to mV
+    uint16_t current_value = value*3300/256/4095;
+        
+    digitalWrite(EN_PIN, LOW);
+    
+    // out of range, we know to receive values betwee 0.4V and 2.0V, checking for that with some margin
+    if(current_value < 200 || current_value > 2500) {
         return false;
     }
 
-    //float an_converted  = mapf(an_data, 496, 2482, 0, 32.4);
-
     #ifdef debug
         serial_debug.print("ANEMOMETER (read_windspeed) - Wind analog:");
-        serial_debug.println(an_data);
+        serial_debug.println(current_value);
     #endif
 
     //int int_an_converted = int(an_converted * 100);
@@ -97,7 +107,7 @@ bool ANEMOMETER::read_windspeed() {
                 counter_row,                    // row counter
                 counter_col_overflow,           // check if coloumn has overflow 
                 ANEMOMETER_num_of_variables,       // number of variables
-                an_data,                  // the value
+                current_value,                  // the value
                 exec_timer_last);               // the last time
 
     return true;

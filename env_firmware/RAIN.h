@@ -20,7 +20,7 @@ class RAIN
         // variables
         int PIN                         = 0;
         int CAN_ID;
-        int exec_time                   = 120 * 1000;
+        int exec_time                   = 180 * 1000;
         unsigned long exec_timer_last   = 0;
 
         int         counter_col                 = 0;

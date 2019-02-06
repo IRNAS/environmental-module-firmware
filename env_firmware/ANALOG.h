@@ -5,6 +5,7 @@
 #include "global.h"
 
 #define ANALOG_num_of_variables 1
+extern uint8_t gpio_sharing_counter;
 
 class ANALOG
 {
@@ -19,7 +20,7 @@ class ANALOG
         int PIN                         = 0;
         int EN_PIN                         = 19;
         int CAN_ID;
-        int exec_time                   = 120 * 1000;
+        int exec_time                   = 180 * 1000;
         unsigned long exec_timer_last   = 0;
 
         int         counter_col                 = 0;

@@ -3,13 +3,14 @@
 #include "Sensor.h"
 #include "global.h"
 #include <STM32L0.h> 
+#include "TimerMillis.h"
 
 // LED light error status
 // Fast blinking - CAN error
 //##########################################
 
-//#define TOP1
-#define MID2
+#define TOP1
+//#define MID2
 //#define MID3
 //#define BOTTOM4
 
@@ -18,15 +19,15 @@
 Sensor *s_L0 = new mySensor<L0>(1);
 Sensor *s_TSL = new mySensor<TSL2591_sensor>(2);
 Sensor *s_BME = new mySensor<BME>(3);
-Sensor *s_ANEMOMETER = new  mySensor<ANEMOMETER>(4, A0);
-Sensor *s_RAIN = new mySensor<RAIN>(5, 5);
+Sensor *s_ANEMOMETER = new  mySensor<ANEMOMETER>(4, A4); // Pin PA0, Analog channel 4, enable pin 25
+Sensor *s_RAIN = new mySensor<RAIN>(5, 4);
 Sensor *s_CO2 = new mySensor<CO2>(6);
 Sensor *s_TDR = new mySensor<TDR>(7,19);
 //note there is a flaw in implementation where TDR, OneW_TMP and ANALOG need to be called at the same interval as they share a common power enable pin
 Sensor *s_BAT = new mySensor<BAT>(8);
 Sensor *s_OneW_TMP = new mySensor<OneW_TMP>(9);
-Sensor *s_A0 = new mySensor<ANALOG>(10,A4);
-Sensor *s_A1 = new mySensor<ANALOG>(11,A1);
+Sensor *s_A0 = new mySensor<ANALOG>(10,A4); // Pin PA0, Analog channel 4
+Sensor *s_A1 = new mySensor<ANALOG>(11,A1); // Pin PA5, Analog channel 1
 
 #ifdef TOP1
   Sensor *sensors[] = {s_L0, s_TSL, s_BME, s_CO2, s_RAIN, s_ANEMOMETER}; 
@@ -48,11 +49,18 @@ Sensor *s_A1 = new mySensor<ANALOG>(11,A1);
   int n_sensors = 8; //Change number of sensors
 #endif
 
+TimerMillis watchdog;
+
+void callbackWatchdog(void)
+{
+  STM32L0.wdtReset();
+}
+
 //CAN module
 CAN_MODULE module_CAN(SET_CAN_ID);//this does not work
 
 int active_can_id[8] = {0};
-
+uint8_t gpio_sharing_counter = 0;
 char active_sensor_addresses[64];
 char sensor_exect_timer_counter = 0;
 
@@ -66,6 +74,7 @@ void setup() {
   pinMode(22, OUTPUT);
   digitalWrite(22, LOW);
   STM32L0.wdtEnable(18000);
+  watchdog.start(callbackWatchdog, 0, 8500);
 
   // setup all modules
   if(!module_CAN.setup()) {
@@ -96,8 +105,6 @@ void setup() {
 } // end of setup
 
 void loop() {
-  STM32L0.wdtReset();
-
   // EXEC sending, we received something on can
   if(module_CAN.return_local_send_data_int()>0) {
     //clean up the indicator to process
@@ -110,7 +117,6 @@ void loop() {
 
     //get the sensor number without the evice prefix
     int global_id = module_CAN.get_sensor_CAN_id(module_CAN.return_CAN_RXID());
-
     int sensor_idx = sensor_lookup(global_id); //Find position of the specific sensor
 
     // check if the sensor is present on the device  
@@ -132,12 +138,20 @@ void loop() {
       //sensors[sensor_idx]->printData();
 
       //check if scan request or data request
-      if(module_CAN.return_local_send_data_int()==2){
+      if(module_CAN.return_local_send_data_int()==1){
         //scan request
         #ifdef debug
           serial_debug.println("loop() - CAN message present");
         #endif
         module_CAN.send_present();
+      }
+      //check if reset request or data request
+      else if(module_CAN.return_local_send_data_int()==2){
+        //scan request
+        #ifdef debug
+          serial_debug.println("loop() - CAN message reset");
+        #endif
+        reset_devices();
       }
       //otherwise send the reply with data
       else{
@@ -175,9 +189,7 @@ void loop() {
         sensor_exect_timer_counter=0;
         // sleep devices
         digitalWrite(22, LOW);
-        STM32L0.wdtReset();
         sleep_devices();
-        STM32L0.wdtReset();
         digitalWrite(22, HIGH);
         }
     } // end of if
@@ -287,9 +299,21 @@ void sleep_devices() {
   #ifdef debug
     serial_debug.println("sleep_devices() - sleeping for 15s");
   #endif
+  
+  //backup deactivate
+  gpio_sharing_counter=0;//decrement upon deactivation
+  digitalWrite(19, gpio_sharing_counter);
 
   //module_CAN.enable_sleep();
   // STM32L0
   STM32L0.stop(15 * 1000);
 
+}
+
+void reset_devices() {
+  #ifdef debug
+    serial_debug.println("reset_devices() - full system reset");
+  #endif
+  delay(5000);
+  STM32L0.reset();
 }

@@ -1,5 +1,6 @@
 #include "can_module.h"
 #include "global.h"
+#include "TimerMillis.h"
 
 CAN_MODULE thisClass;
 
@@ -9,6 +10,18 @@ int local_send_data_int = 0;
 long unsigned int CAN_RXID = 0;
 unsigned char len = 0;
 unsigned char rxBuf[8];
+
+TimerMillis CANreset;
+
+void callbackCANreset(void)
+{
+    //reset if no can communication has been present in the last X time
+    #ifdef debug
+      serial_debug.println("reset_devices() - full system reset");
+    #endif
+    delay(5000);
+    STM32L0.reset();
+}
 
 CAN_MODULE::CAN_MODULE(int ID){
   CAN_DEVICE_ID = ID;
@@ -48,7 +61,7 @@ void CAN_MODULE::ISR_CAN() {
     STM32L0.wakeup();
 
     if(execute_int_can) {
-
+        CANreset.restart(0,CAN_SAFETY_MARGIN*60*1000);
         #ifdef debug
             //serial_debug.println("can_module (ISR_CAN) - ISR");
         #endif
@@ -58,15 +71,16 @@ void CAN_MODULE::ISR_CAN() {
         if((CAN_RXID&0xff00) == CAN_DEVICE_ID) {
             local_send_data_int   = 1;
             //check if scan request or data request
-            if(rxBuf[0]==0x01){
+            if(rxBuf[0]==0x02){
               local_send_data_int   = 1;
             }
-            //check if rest request
+            //check if reset request
             else if(rxBuf[0]==0xab){
-              
+              //implement reset
+              local_send_data_int   = 2;
             }
             else{
-              local_send_data_int   = 2;
+              local_send_data_int   = 3;
             }
         } else {
             local_send_data_int   = 0;
@@ -90,7 +104,8 @@ bool CAN_MODULE::setup() {
         // setup the interrupt pin
         pinMode(CAN_PIN_INT, INPUT);
         attachInterrupt(digitalPinToInterrupt(CAN_PIN_INT), ISR, FALLING);
-
+        //implement the safety timer, 120 minutes
+        CANreset.start(callbackCANreset,0,CAN_SAFETY_MARGIN*60*1000);
         return true;
     } else {
         return false;
@@ -101,6 +116,13 @@ bool CAN_MODULE::setup() {
 bool CAN_MODULE::enable_sleep() {
   CAN_BUS.setMode(MCP_SLEEP);
   return true;
+} 
+
+void CAN_MODULE::self_check() {
+  #ifdef debug
+    serial_debug.print("self_check() - check CAN: 0x");
+    serial_debug.println(CAN_BUS.checkReceive(),HEX);
+  #endif
 } 
 
 /*

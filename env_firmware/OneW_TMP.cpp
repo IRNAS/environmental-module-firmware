@@ -17,8 +17,8 @@ OneW_TMP::OneW_TMP():oneWire(16) {
 bool OneW_TMP::setup() {
 
 	bool scan = true;
-	pinMode(EN_PIN, OUTPUT);
-	digitalWrite(EN_PIN, HIGH);
+	gpio_sharing_counter++;//increment upon activation
+  digitalWrite(19, gpio_sharing_counter);
 	delay(300);
 	while (scan) {
 		//Scan for the next address
@@ -59,7 +59,8 @@ bool OneW_TMP::setup() {
 			}
 
 		}
-		digitalWrite(EN_PIN, LOW);
+		gpio_sharing_counter--;//decrement upon deactivation
+    digitalWrite(19, gpio_sharing_counter);
 
 		if (n_sensors > 0)
 		{
@@ -135,9 +136,8 @@ bool OneW_TMP::exec_timer() {
  *  Description:    read the raw temperature value
  */
 bool OneW_TMP::read_temperature(int device_idx) {
-
-	//Test read
-	//digitalWrite(EN_PIN, HIGH);
+	gpio_sharing_counter++;//increment upon activation
+  digitalWrite(19, gpio_sharing_counter);
 	delay(300);
 
 	oneWire.reset();
@@ -160,7 +160,8 @@ bool OneW_TMP::read_temperature(int device_idx) {
 	else if (cfg == 0x40) raw = raw & ~1; // 11 bit res, 375 ms
 
 	current_temperature[device_idx] = (float)raw / 16.0*100;
-	//digitalWrite(EN_PIN, LOW);
+  gpio_sharing_counter--;//decrement upon deactivation
+  digitalWrite(19, gpio_sharing_counter);
 
     #ifdef debug
         serial_debug.print("OneWire (read_temperature) - temperature:"); 

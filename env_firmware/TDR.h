@@ -6,6 +6,7 @@
 #include "global.h"
 
 #define TDR_num_of_variables 5
+extern uint8_t gpio_sharing_counter;
 
 class TDR
 {
@@ -20,7 +21,7 @@ class TDR
         int PIN                         = 0;
         int EN_PIN                         = 19;
         int CAN_ID;
-        int exec_time                   = 120 * 1000;
+        int exec_time                   = 180 * 1000;
         int exec_time_read              = 8 * 1000;
         int exec_time_stage              = 1;
         unsigned long exec_timer_last   = 0;

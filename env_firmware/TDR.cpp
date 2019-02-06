@@ -51,7 +51,8 @@ bool TDR::exec_timer() {
 
     if((millis() - exec_timer_last >= exec_time) & (exec_time_stage==1)) {
       //stage 1: initiate
-      digitalWrite(EN_PIN, HIGH);
+      gpio_sharing_counter++;//increment upon activation
+      digitalWrite(19, gpio_sharing_counter);
       exec_timer_last = millis();
       exec_time_stage=2;
       #ifdef debug
@@ -157,7 +158,8 @@ boolean TDR::read_allTDR() {
 			}
 		}
 	}//End while
-  digitalWrite(EN_PIN, LOW);
+  gpio_sharing_counter--;//decrement upon deactivation
+  digitalWrite(19, gpio_sharing_counter);
 #ifdef debug
 	serial_debug.println("");
 #endif

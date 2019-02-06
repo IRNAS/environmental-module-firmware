@@ -12,6 +12,7 @@ bool ANALOG::setup() {
     delay(100);
     bool value = read_sensor();
     pinMode(PIN, INPUT);
+    analogReadResolution(12);
 
     return value;
 
@@ -76,22 +77,26 @@ bool ANALOG::exec_timer() {
  *  Description:    read the sensor data
  */
 bool ANALOG::read_sensor() {
-    //digitalWrite(EN_PIN, HIGH);
+    //shared enable pin
+    gpio_sharing_counter++;//increment upon activation
+    digitalWrite(19, gpio_sharing_counter);
     delay(300);
 
-    long value = 0;
+    float value = 0;
     
     for(int i=0; i<256; i++){
       value+=analogRead(PIN);
       delay(1);
     }
-    int current_value = value/256;
-    //digitalWrite(EN_PIN, LOW);
+    uint16_t current_value = value*3300/256/4095;
+    
+    gpio_sharing_counter--;//decrement upon deactivation
+    digitalWrite(19, gpio_sharing_counter);
 
-    // out of range -> CHANGE THE RANGE
-    //if(current_value < 100 || current_value > 4000 ) {
-      //  return false;
-    //}
+    #ifdef debug
+      serial_debug.print("ANALOG: ");
+      serial_debug.println(current_value);
+    #endif
 
     // updating the data into our data array
     update_16bit(data,                          // our data array

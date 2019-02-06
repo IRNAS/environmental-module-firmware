@@ -17,7 +17,10 @@
 #define CAN_SPEED CAN_125KBPS       // CAN_125KBPS
 #define CAN_MHZ   MCP_16MHZ          // MCP_16MHZ, MCP_20MHZ
 
-#define SET_CAN_ID 0x200
+//CHANGE BELOW FOR  MODULES ACCORDINGLY 0x100-0x400
+#define SET_CAN_ID 0x100
+
+#define CAN_SAFETY_MARGIN 180         // in minutes
 
 class CAN_MODULE
 {
@@ -40,6 +43,7 @@ class CAN_MODULE
         bool send_empty();
         bool send_present();
         bool enable_sleep();
+        void self_check();
 
         void ISR_CAN();
 

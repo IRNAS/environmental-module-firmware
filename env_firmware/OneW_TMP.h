@@ -8,6 +8,7 @@
 #define OneW_TMP_num_of_variables 3
 #define ONE_WIRE_BUS 11
 #define TEMP_PRECISION 12 //read precision of temp probe sensor, 12b max
+extern uint8_t gpio_sharing_counter;
 
 class OneW_TMP
 {
@@ -25,13 +26,12 @@ class OneW_TMP
 		int PIN = 0;
 		int EN_PIN = 19;
         int CAN_ID;
-        int exec_time                   = 120 * 1000;
+        int exec_time                   = 180 * 1000;
         unsigned long exec_timer_last   = 0;
 
         int         counter_col                 = 0;
         int         counter_row                 = 0;
         bool        counter_col_overflow        = false;
-
 
         // data
         byte data[OneW_TMP_num_of_variables][COL_LENGTH][8];
