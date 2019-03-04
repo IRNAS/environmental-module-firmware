@@ -9,18 +9,15 @@ int                     current_rain_count          = 0;
  *  Description:    interrupt function for RAIN
  */
 void ISR_RAIN() {
-
-    STM32L0.wakeup();
-
-    #ifdef debug
-        serial_debug.println("RAIN (ISR_RAIN) - interrupt on rain");
-    #endif
-
-    if((millis() - rain_contacttime) > 70) {
+    if((millis() - rain_contacttime) > 150) {
         current_rain_count++;
-        rain_contacttime = millis();
+      #ifdef debug
+          serial_debug.print("RAIN (ISR_RAIN) - interrupt on rain: ");
+          serial_debug.print(current_rain_count);
+          serial_debug.println("");
+      #endif
     }
-
+    rain_contacttime = millis();
 } // end of ISR_RAIN
 
 /*

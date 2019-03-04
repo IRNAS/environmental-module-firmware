@@ -21,7 +21,7 @@ bool CO2::setup() {
         #ifdef debug
           serial_debug.write(inChar);
         #endif
-        if(inChar == 'z' || inChar == 'Z') {
+        if(inChar == '\n' || inChar == 'Z') {
             recv_string = "";
         }
 
@@ -29,7 +29,7 @@ bool CO2::setup() {
             recv_string += (char)inChar;
         }
 
-        if(inChar == '\n') {
+        if(inChar == 'z' && recv_string.length()==5) {
             current_co2 = (recv_string.toInt() * 10);
             value_updated = true;
         }
@@ -107,12 +107,13 @@ bool CO2::read_CO2() {
     bool value_updated = false;
 
     CO2_SERIAL.flush();//clear buffer, wait max 400ms for fresh values
+    // Z ##### z #####/r/n
     unsigned long timeout = millis()+600;
     while(millis()<timeout ) {
       if(CO2_SERIAL.available() > 0){
         int inChar = CO2_SERIAL.read();
 
-        if(inChar == 'z' || inChar == 'Z') {
+        if(inChar == '\n' || inChar == 'Z') {
             recv_string = "";
         }
 
@@ -120,21 +121,21 @@ bool CO2::read_CO2() {
             recv_string += (char)inChar;
         }
 
-        if(inChar == '\n') {
+        if(inChar == 'z' && recv_string.length()==5) {
             current_co2 = (recv_string.toInt() * 10);
-
-			// updating the data into our data array
-			update_16bit(data,                          // our data array
-				time_data,                      // our time data array
-				id_co2,                // pressure ID
-				counter_col,                    // coloumn counter
-				counter_row,                    // row counter
-				counter_col_overflow,           // check if coloumn has overflow 
-				CO2_num_of_variables,       // number of variables
-				current_co2,                  // the value
-				exec_timer_last);               // the last time
-
+                                            // updating the data into our data array
+            update_16bit(data,              // our data array
+            time_data,                      // our time data array
+            id_co2,                         // pressure ID
+            counter_col,                    // coloumn counter
+            counter_row,                    // row counter
+            counter_col_overflow,           // check if coloumn has overflow 
+            CO2_num_of_variables,           // number of variables
+            current_co2,                    // the value
+            exec_timer_last);               // the last time
+            
             value_updated = true;
+            break; // exit while loop when reading the measurement
         }
       }
     }
