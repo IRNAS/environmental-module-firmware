@@ -106,7 +106,8 @@ bool RAIN::read_raincount() {
                 RAIN_num_of_variables,          // number of variables
                 current_rain_count,                  // the value
                 exec_timer_last);               // the last time
-
+    //reset rain count to zero
+    current_rain_count=0;
     return true;
 
 } // end of read_raincount()
