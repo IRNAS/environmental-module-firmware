@@ -23,7 +23,7 @@ class TDR
         int CAN_ID;
         int exec_time                   = 180 * 1000;
         int exec_time_read              = 8 * 1000;
-        int exec_time_stage              = 1;
+        int exec_time_stage             = 0;
         unsigned long exec_timer_last   = 0;
 
         int         counter_col                 = 0;

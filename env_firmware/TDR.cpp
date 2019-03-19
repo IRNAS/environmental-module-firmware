@@ -23,8 +23,7 @@ bool TDR::setup() {
 			updated = true;
 		}
 	}
-  digitalWrite(PIN, LOW);
-  //timer_tdr_read=TimerMillis();
+  digitalWrite(EN_PIN, LOW);
   return updated;
 } // end of setup()
 
@@ -48,23 +47,31 @@ void TDR::print_data() {
  *  Description: execute read if the timer is right
  */
 bool TDR::exec_timer() {
-    if(millis() - exec_timer_last >= exec_time) {
-        
+  boolean state = false;
+    if((millis() - exec_timer_last >= exec_time) & (exec_time_stage==0)) {
+          exec_time_stage=1;
+          #ifdef debug
+                serial_debug.println("TDR (exec_timer) - executed enable");
+          #endif
+          //enable the pin
+          gpio_sharing_counter++;//increment upon activation
+          digitalWrite(19, gpio_sharing_counter);
+          exec_timer_last = millis(); 
+      }
+      else if(exec_time_stage!=0){
         if(read()) {
-            //print_data();
-            #ifdef debug
-                serial_debug.println("TDR (exec_timer) - executed read");
-            #endif
-
-            exec_timer_last = millis();
-
-            return true;
+          //print_data();
+          #ifdef debug
+              serial_debug.println("TDR (exec_timer) - executed read");
+          #endif
+          state==true;
         }
-        return false;
-        
-    }
-
-    return false;
+        exec_time_stage=0;
+        gpio_sharing_counter--;//decrement upon deactivation
+        digitalWrite(19, gpio_sharing_counter);
+        //exec_timer_last = millis(); 
+      }
+    return state;
 } // end of exec_timer()
 
 /*
@@ -72,9 +79,7 @@ bool TDR::exec_timer() {
  *  Description:    read all TDR data
  */
 boolean TDR::read_allTDR() {
-  gpio_sharing_counter++;//increment upon activation
-  digitalWrite(19, gpio_sharing_counter);
-  delay(8000);
+
 	Wire.requestFrom(8, 80);    // request 80 bytes from slave device #8
 	int i = 0;
 	int j = 0;
@@ -152,8 +157,6 @@ boolean TDR::read_allTDR() {
 			}
 		}
 	}//End while
-  gpio_sharing_counter--;//decrement upon deactivation
-  digitalWrite(19, gpio_sharing_counter);
 #ifdef debug
 	serial_debug.println("");
 #endif
