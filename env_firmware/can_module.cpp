@@ -17,7 +17,7 @@ void callbackCANreset(void)
 {
     //reset if no can communication has been present in the last X time
     #ifdef debug
-      serial_debug.println("reset_devices() - full system reset");
+      serial_debug.println("callbackCANreset() - full system reset");
     #endif
     delay(5000);
     STM32L0.reset();

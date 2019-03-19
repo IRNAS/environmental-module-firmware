@@ -10,10 +10,10 @@
 //##########################################
 // Uncomment appropriate line based on the number on your module. For example for device with number 1, uncomment line #define TOP1 and comment all the others. 
 // Also, change the number for SET_CAN_ID in the can_module.h accordingly. I.e. for module 1, set #define SET_CAN_ID 0x100, for module 2 set it to #define SET_CAN_ID 0x200.
-#define TOP1
+//#define TOP1
 //#define MID2
 //#define MID3
-//#define BOTTOM4
+#define BOTTOM4
 
 //##########################################
 // Sensor objects
@@ -50,11 +50,31 @@ Sensor *s_A1 = new mySensor<ANALOG>(11,A1); // Pin PA5, Analog channel 1
   int n_sensors = 8; //Change number of sensors
 #endif
 
+// general watchdog of thy whole systems
 TimerMillis watchdog;
 
 void callbackWatchdog(void)
 {
   STM32L0.wdtReset();
+}
+
+// watchdog to limit maximal wake-up duration
+TimerMillis watchdog_awake;
+int watchdog_awake_counter = 0;
+
+void callbackWatchdogAwake(void)
+{
+  if(watchdog_awake_counter==0){
+    //reset if on for longer then 300s
+    #ifdef debug
+      serial_debug.println("callbackWatchdogAwake() - full system reset");
+    #endif
+    //device has not woken up since last check
+    reset_devices();
+  }
+  else{
+    watchdog_awake_counter=0;
+  }
 }
 
 //CAN module
@@ -74,8 +94,15 @@ void setup() {
 
   pinMode(22, OUTPUT);
   digitalWrite(22, LOW);
+
+  //gpio pin sharing counter
+  gpio_sharing_counter=0;//decrement upon deactivation
+  pinMode(19, OUTPUT);
+  digitalWrite(19, LOW);
+  
   STM32L0.wdtEnable(18000);
   watchdog.start(callbackWatchdog, 0, 8500);
+  watchdog_awake.start(callbackWatchdogAwake, 0, 300000); //300s maximal on time
 
   // setup all modules
   if(!module_CAN.setup()) {
@@ -108,9 +135,37 @@ void setup() {
 void loop() {
   // EXEC sending, we received something on can
   if(module_CAN.return_local_send_data_int()>0) {
-    //clean up the indicator to process
+    //set the indicator to block the interrupt
     module_CAN.execute_int_can = false;
+    //process can as a message has been received
+    can_process();
+    //clean up variables
+    module_CAN.execute_int_can = true;
+    module_CAN.set_local_send_data_int(0);
+  }
+  else if(module_CAN.return_local_send_data_int() == 0 && module_CAN.execute_int_can == true) {
+    
+      //check if any sensors require processing - runs multiple times iterating through sensors
+      if(sensor_exect_timer_counter < n_sensors){
+        if(sensors[sensor_exect_timer_counter]->getCANid() != 0){
+          sensors[sensor_exect_timer_counter]->execTimer();
+        }
+        sensor_exect_timer_counter++;
+       }
+       else{
+        sensor_exect_timer_counter=0;
+        // sleep devices
+        sleep_devices();
+      }
+    } // end of if
+} // end of loop
 
+/*
+ *  Function:     void can_process()
+ *  Description:  process can in the main loop
+ */
+void can_process()
+{
     #ifdef debug
       serial_debug.print("loop() - CAN_RXID chosen (ID): ");
       serial_debug.println(module_CAN.return_CAN_RXID(), HEX);
@@ -174,28 +229,7 @@ void loop() {
         }
       }
     }
-
-    module_CAN.execute_int_can = true;
-    module_CAN.set_local_send_data_int(0);
-
-  } else if(module_CAN.return_local_send_data_int() == 0 && module_CAN.execute_int_can == true) {
-      if(sensor_exect_timer_counter < n_sensors){
-        if(sensors[sensor_exect_timer_counter]->getCANid() != 0)
-        {
-          sensors[sensor_exect_timer_counter]->execTimer();
-        }
-        sensor_exect_timer_counter++;
-        }
-       else{
-        sensor_exect_timer_counter=0;
-        // sleep devices
-        digitalWrite(22, LOW);
-        sleep_devices();
-        digitalWrite(22, HIGH);
-        }
-    } // end of if
-} // end of loop
-
+}
 /*
  *  Function:     void device_setup(bool status, String name)
  *  Description:  helper function for setting up device
@@ -302,13 +336,26 @@ void sleep_devices() {
   #endif
   
   //backup deactivate
-  gpio_sharing_counter=0;//decrement upon deactivation
+  //gpio_sharing_counter=0;//decrement upon deactivation
+  //sharing counter is zero inless otherwise requested by a module
   digitalWrite(19, gpio_sharing_counter);
 
-  //module_CAN.enable_sleep();
-  // STM32L0
-  STM32L0.stop(15 * 1000);
-
+  //cleanup variables
+  sensor_exect_timer_counter=0;
+  
+  //check what state can is in
+  if(module_CAN.execute_int_can == false){
+    //can processing happening, should this be called during execution, then an interrupt may fire as it is not blocked
+    //setting to true as this is only a safety timer exception
+    module_CAN.execute_int_can = true;
+    module_CAN.set_local_send_data_int(0);
+  }
+  
+  // sleep devices
+  digitalWrite(22, LOW);      //LED off
+  STM32L0.stop(15 * 1000);    //sleep CPU
+  watchdog_awake_counter++;   //increment the counter on every wake
+  digitalWrite(22, HIGH);     // LED on
 }
 
 void reset_devices() {
