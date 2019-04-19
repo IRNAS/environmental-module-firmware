@@ -216,7 +216,62 @@ boolean TDR::read_allTDR() {
 		TDR_num_of_variables,       // number of variables
 		current_other_data,                  // the value
 		exec_timer_last);               // the last time
+// Sensor 2
+  current_vol_w_content = (int)(read_data[1][1]*100);
+  update_16bit(data,                          // our data array
+    time_data,                      // our time data array
+    id_vol_w_content1,                // pressure ID
+    counter_col,                    // coloumn counter
+    counter_row,                    // row counter
+    counter_col_overflow,           // check if coloumn has overflow 
+    TDR_num_of_variables,       // number of variables
+    current_vol_w_content,                  // the value
+    exec_timer_last);               // the last time
 
+  current_soil_temp = (int)(read_data[1][2]*100);
+  update_16bit(data,                          // our data array
+    time_data,                      // our time data array
+    id_soil_temp1,                // pressure ID
+    counter_col,                    // coloumn counter
+    counter_row,                    // row counter
+    counter_col_overflow,           // check if coloumn has overflow 
+    TDR_num_of_variables,       // number of variables
+    current_soil_temp,                  // the value
+    exec_timer_last);               // the last time
+
+  current_soil_perm = (int)(read_data[1][3] * 100);
+  update_16bit(data,                          // our data array
+    time_data,                      // our time data array
+    id_soil_perm1,                // pressure ID
+    counter_col,                    // coloumn counter
+    counter_row,                    // row counter
+    counter_col_overflow,           // check if coloumn has overflow 
+    TDR_num_of_variables,       // number of variables
+    current_soil_perm,                  // the value
+    exec_timer_last);               // the last time
+
+  current_soil_elec = (int)(read_data[1][4]);
+  update_16bit(data,                          // our data array
+    time_data,                      // our time data array
+    id_soil_elec1,                // pressure ID
+    counter_col,                    // coloumn counter
+    counter_row,                    // row counter
+    counter_col_overflow,           // check if coloumn has overflow 
+    TDR_num_of_variables,       // number of variables
+    current_soil_elec,                  // the value
+    exec_timer_last);               // the last time
+
+  current_other_data = (int)(read_data[1][5]);
+  update_16bit(data,                          // our data array
+    time_data,                      // our time data array
+    id_other_data1,                // pressure ID
+    counter_col,                    // coloumn counter
+    counter_row,                    // row counter
+    counter_col_overflow,           // check if coloumn has overflow 
+    TDR_num_of_variables,       // number of variables
+    current_other_data,                  // the value
+    exec_timer_last);               // the last time
+    
 #ifdef debug
 	serial_debug.print("current_vol_w_content - Voltage:");
 	serial_debug.println(current_vol_w_content);

@@ -5,7 +5,7 @@
 #include <Wire.h>
 #include "global.h"
 
-#define TDR_num_of_variables 5
+#define TDR_num_of_variables 10
 extern uint8_t gpio_sharing_counter;
 
 class TDR
@@ -58,6 +58,13 @@ class TDR
         uint8_t     id_soil_perm                = 2;  
         uint8_t     id_soil_elec                = 3;
         uint8_t     id_other_data               = 4;
+
+         // id of values
+        uint8_t     id_vol_w_content1            = 5;
+        uint8_t     id_soil_temp1                = 6;
+        uint8_t     id_soil_perm1                = 7;  
+        uint8_t     id_soil_elec1                = 8;
+        uint8_t     id_other_data1               = 9;
 
 
 };
