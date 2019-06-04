@@ -3,19 +3,50 @@
 
 volatile unsigned long  rain_contacttime            = 0;
 int                     current_rain_count          = 0;
+int                     rain_check_value            = 0;
+
+// timer to check rain pulse input width
+TimerMillis rain_check;
+
+void rain_check_callback(){
+  if(digitalRead(4)==LOW){
+    //active low
+    rain_check_value++;
+    }
+  if((millis() - rain_contacttime) > 250){
+    rain_check.stop();
+    #ifdef debug
+      serial_debug.print("RAIN (rain_check) - rain: ");
+      serial_debug.print(millis());
+      serial_debug.print(" ");
+      serial_debug.print(rain_check_value);
+      serial_debug.print(" ");
+    #endif
+    if(rain_check_value>8){
+     current_rain_count++;
+    }
+    #ifdef debug
+      serial_debug.print(current_rain_count);
+      serial_debug.println("");
+    #endif
+  }
+}
 
 /*
  *  Function:       void ISR_RAIN()
  *  Description:    interrupt function for RAIN
  */
 void ISR_RAIN() {
-    if((millis() - rain_contacttime) > 150) {
-        current_rain_count++;
-      #ifdef debug
+    // rain pulse at maximum every 1000ms
+    if((millis() - rain_contacttime) > 1000) {
+      //start a timer to read rain  input pin values every 20ms for 200ms
+      rain_check.start(rain_check_callback, 0, 20);
+      rain_check_value=0;
+      /*#ifdef debug
           serial_debug.print("RAIN (ISR_RAIN) - interrupt on rain: ");
           serial_debug.print(current_rain_count);
           serial_debug.println("");
-      #endif
+      #endif*/
     }
     rain_contacttime = millis();
 } // end of ISR_RAIN
@@ -26,7 +57,7 @@ void ISR_RAIN() {
  */
 bool RAIN::setup() {
     pinMode(PIN, INPUT);
-    attachInterrupt(digitalPinToInterrupt(PIN), ISR_RAIN, FALLING);
+    attachInterrupt(digitalPinToInterrupt(PIN),ISR_RAIN, FALLING);
 
     return true;
 
