@@ -15,13 +15,13 @@ void rain_check_callback(){
     }
   if((millis() - rain_contacttime) > 250){
     rain_check.stop();
-    #ifdef debug
+    /*#ifdef debug
       serial_debug.print("RAIN (rain_check) - rain: ");
       serial_debug.print(millis());
       serial_debug.print(" ");
       serial_debug.print(rain_check_value);
       serial_debug.print(" ");
-    #endif
+    #endif*/
     if(rain_check_value>8){
      current_rain_count++;
     }
