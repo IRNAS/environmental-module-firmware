@@ -22,7 +22,7 @@ void rain_check_callback(){
       serial_debug.print(rain_check_value);
       serial_debug.print(" ");
     #endif*/
-    if(rain_check_value>8){
+    if(rain_check_value>4){
      current_rain_count++;
     }
     #ifdef debug
