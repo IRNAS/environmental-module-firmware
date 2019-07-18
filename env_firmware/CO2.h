@@ -9,6 +9,8 @@
 #define CO2_SERIAL              Serial1
 #define CO2_SERIAL_BAUD         9600
 
+#include "SparkFun_SCD30_Arduino_Library.h" 
+
 class CO2 
 {
     public:
@@ -47,6 +49,7 @@ class CO2
 
         // id of values
         uint8_t id_co2                      = 0;
+        boolean co2_i2c = false;// false if uart, true if i2c
 
 
 };

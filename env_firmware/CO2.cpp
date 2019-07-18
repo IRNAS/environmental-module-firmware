@@ -3,6 +3,8 @@
 
 #include <Arduino.h>
 
+SCD30 airSensor;
+
 /*
  *  Function:       bool CO2::setup()
  *  Description:    setup the serial for the CO2
@@ -36,6 +38,26 @@ bool CO2::setup() {
       }
     }
 
+    //if not uart sensors but i2c
+    if(value_updated == false){
+      Wire.begin();
+      Wire.beginTransmission(0x61);
+      uint8_t dummy = Wire.endTransmission();
+      if(dummy==0){
+        airSensor.begin(); //This will cause readings to occur every two seconds
+        value_updated = true;
+        co2_i2c=true;
+        /*unsigned long timeout = millis()+5000;
+        while(millis()<timeout ) {
+          if(airSensor.dataAvailable()){
+            current_co2=airSensor.getCO2();
+            value_updated = true;
+            co2_i2c=true;
+            break;
+          }
+        }*/
+      }
+    }
     return value_updated;
 } // end of setup()
 
@@ -105,41 +127,51 @@ bool CO2::exec_timer() {
 bool CO2::read_CO2() {
     String recv_string = "";
     bool value_updated = false;
-
-    CO2_SERIAL.flush();//clear buffer, wait max 400ms for fresh values
-    // Z ##### z #####/r/n
-    unsigned long timeout = millis()+600;
-    while(millis()<timeout ) {
-      if(CO2_SERIAL.available() > 0){
-        int inChar = CO2_SERIAL.read();
-
-        if(inChar == '\n' || inChar == 'Z') {
-            recv_string = "";
-        }
-
-        if(isDigit(inChar)) {
-            recv_string += (char)inChar;
-        }
-
-        if(inChar == 'z' && recv_string.length()==5) {
-            current_co2 = (recv_string.toInt() * 10);
-                                            // updating the data into our data array
-            update_16bit(data,              // our data array
-            time_data,                      // our time data array
-            id_co2,                         // pressure ID
-            counter_col,                    // coloumn counter
-            counter_row,                    // row counter
-            counter_col_overflow,           // check if coloumn has overflow 
-            CO2_num_of_variables,           // number of variables
-            current_co2,                    // the value
-            exec_timer_last);               // the last time
-            
-            value_updated = true;
-            break; // exit while loop when reading the measurement
+    unsigned long timeout = millis()+2600;
+    
+    if(co2_i2c==false){
+      CO2_SERIAL.flush();//clear buffer, wait max 400ms for fresh values
+      // Z ##### z #####/r/n
+      while(millis()<timeout ) {
+        if(CO2_SERIAL.available() > 0){
+          int inChar = CO2_SERIAL.read();
+  
+          if(inChar == '\n' || inChar == 'Z') {
+              recv_string = "";
+          }
+  
+          if(isDigit(inChar)) {
+              recv_string += (char)inChar;
+          }
+  
+          if(inChar == 'z' && recv_string.length()==5) {
+              current_co2 = (recv_string.toInt() * 10);
+                                              // updating the data into our data array
+              update_16bit(data,              // our data array
+              time_data,                      // our time data array
+              id_co2,                         // pressure ID
+              counter_col,                    // coloumn counter
+              counter_row,                    // row counter
+              counter_col_overflow,           // check if coloumn has overflow 
+              CO2_num_of_variables,           // number of variables
+              current_co2,                    // the value
+              exec_timer_last);               // the last time
+              
+              value_updated = true;
+              break; // exit while loop when reading the measurement
+          }
         }
       }
     }
-   
+    else{
+      while(millis()<timeout ) {
+        if(airSensor.dataAvailable()){
+          current_co2=airSensor.getCO2();
+          value_updated = true;
+          break;
+        }
+      }
+    }
     #ifdef debug
          if(value_updated){
             serial_debug.print("CO2 (read_CO2) - CO2:"); 

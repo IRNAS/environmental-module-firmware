@@ -51,6 +51,11 @@ class TDR
         int         current_soil_perm           = 0;
         int         current_soil_elec           = 0;
         int         current_other_data          = 0;
+        int         current_vol_w_content1      = 0;
+        int         current_soil_temp1          = 0;
+        int         current_soil_perm1          = 0;
+        int         current_soil_elec1          = 0;
+        int         current_other_data1         = 0;
 
         // id of values
         uint8_t     id_vol_w_content            = 0;
