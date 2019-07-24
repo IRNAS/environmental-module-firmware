@@ -36,13 +36,13 @@ Sensor *s_A1 = new mySensor<ANALOG>(11,A1); // Pin PA5, Analog channel 1
 #endif
 
 #ifdef MID2
-  Sensor *sensors[] = {s_L0, s_TSL, s_BME};
-  int n_sensors = 3; //Change number of sensors
+  Sensor *sensors[] = {s_L0, s_TSL, s_BME, s_CO2};
+  int n_sensors = 4; //Change number of sensors
 #endif
 
 #ifdef MID3
-  Sensor *sensors[] = {s_L0, s_TSL, s_BME};
-  int n_sensors = 3; //Change number of sensors
+  Sensor *sensors[] = {s_L0, s_TSL, s_BME, s_CO2};
+  int n_sensors = 4; //Change number of sensors
 #endif
 
 #ifdef BOTTOM4
