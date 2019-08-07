@@ -4,6 +4,7 @@
 #include <Arduino.h>
 
 SCD30 airSensor;
+ModbusMaster node;
 
 /*
  *  Function:       bool CO2::setup()
@@ -34,11 +35,12 @@ bool CO2::setup() {
         if(inChar == 'z' && recv_string.length()==5) {
             current_co2 = (recv_string.toInt() * 10);
             value_updated = true;
+            co2_type=0;
         }
       }
     }
 
-    //if not uart sensors but i2c
+    //SCD30 i2c
     if(value_updated == false){
       Wire.begin();
       Wire.beginTransmission(0x61);
@@ -46,16 +48,32 @@ bool CO2::setup() {
       if(dummy==0){
         airSensor.begin(); //This will cause readings to occur every two seconds
         value_updated = true;
-        co2_i2c=true;
-        /*unsigned long timeout = millis()+5000;
-        while(millis()<timeout ) {
-          if(airSensor.dataAvailable()){
-            current_co2=airSensor.getCO2();
-            value_updated = true;
-            co2_i2c=true;
-            break;
-          }
-        }*/
+        co2_type=1;
+      }
+    }
+    //SCD30 UART
+    if(value_updated == false){
+      uint16_t result;
+      CO2_SERIAL.begin(CO2_SERIAL_BAUD_SCD30);
+      node.begin(0x61, CO2_SERIAL);
+     //****************Set measurement interva**************//
+      result = node.writeSingleRegister(0x0025, 0x00002);     // 2s interval
+      if (result > 0) {
+        serial_debug.println("0x0025 NACK");
+      }
+      delay(100);
+    
+      //****************Altitude Compensation**************//
+      //result = node.writeSingleRegister(0x0038, 0);
+      //*************Trigger continuous measurement******************//
+      result = node.writeSingleRegister(0x0036, 0x0000);
+      if (result > 0) {
+        serial_debug.println("0x0036 NACK");
+      }
+      if(result==0){
+        airSensor.begin(); //This will cause readings to occur every two seconds
+        value_updated = true;
+        co2_type=2;
       }
     }
     return value_updated;
@@ -127,9 +145,13 @@ bool CO2::exec_timer() {
 bool CO2::read_CO2() {
     String recv_string = "";
     bool value_updated = false;
-    unsigned long timeout = millis()+2600;
+    unsigned long timeout = millis()+26000;
+
+    serial_debug.println(millis());
+    serial_debug.println(timeout);
+    serial_debug.println(value_updated);
     
-    if(co2_i2c==false){
+    if(co2_type==0){
       CO2_SERIAL.flush();//clear buffer, wait max 400ms for fresh values
       // Z ##### z #####/r/n
       while(millis()<timeout ) {
@@ -163,15 +185,45 @@ bool CO2::read_CO2() {
         }
       }
     }
-    else{
+    else if(co2_type==1){
       while(millis()<timeout ) {
+        serial_debug.print("read_CO2_i2c"); 
         if(airSensor.dataAvailable()){
           current_co2=airSensor.getCO2();
           value_updated = true;
           break;
         }
+        delay(5000);
       }
     }
+    else if(co2_type==2){
+      double CO2;
+      double TEMP;
+      double RH;
+      
+      unsigned int tempU32;
+      while(millis()<timeout ) {
+        //*************Get data ready status******************//
+        node.readHoldingRegisters(0x0027, 0x0001);
+        if (node.getResponseBuffer(0x00) == 1) {
+          //*************Read measurement******************//
+          node.readHoldingRegisters(0x0028, 0x0006);
+          tempU32 = (unsigned int)(node.getResponseBuffer(0x00) << 16) | node.getResponseBuffer(0x01);
+          CO2 = *(float*)&tempU32;
+      
+          tempU32 = (unsigned int)(node.getResponseBuffer(0x02) << 16) | node.getResponseBuffer(0x03);
+          RH = *(float*)&tempU32;
+      
+          tempU32 = (unsigned int)(node.getResponseBuffer(0x04) << 16) | node.getResponseBuffer(0x05);
+          TEMP = *(float*)&tempU32;
+
+          current_co2=CO2;
+          value_updated = true;
+          break;
+        }
+      }
+    }
+    
     #ifdef debug
          if(value_updated){
             serial_debug.print("CO2 (read_CO2) - CO2:"); 

@@ -10,10 +10,11 @@
 //##########################################
 // Uncomment appropriate line based on the number on your module. For example for device with number 1, uncomment line #define TOP1 and comment all the others. 
 // Also, change the number for SET_CAN_ID in the can_module.h accordingly. I.e. for module 1, set #define SET_CAN_ID 0x100, for module 2 set it to #define SET_CAN_ID 0x200.
-//#define TOP1
+#define TOP1
 //#define MID2
 //#define MID3
-#define BOTTOM4
+//#define BOTTOM4
+
 
 //##########################################
 // Sensor objects
@@ -90,6 +91,7 @@ void setup() {
   // setup serial
   #ifdef debug
     serial_debug.begin(serial_debug_speed);
+    serial_debug.println("Starting.");
   #endif
 
   pinMode(22, OUTPUT);

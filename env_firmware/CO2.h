@@ -3,13 +3,16 @@
 
 #include <Arduino.h>
 #include "global.h"
+#include "ModbusMaster.h"
+#include "SparkFun_SCD30_Arduino_Library.h" 
 
 #define CO2_num_of_variables    1
 
 #define CO2_SERIAL              Serial1
 #define CO2_SERIAL_BAUD         9600
+#define CO2_SERIAL_BAUD_SCD30   19200
 
-#include "SparkFun_SCD30_Arduino_Library.h" 
+
 
 class CO2 
 {
@@ -49,7 +52,10 @@ class CO2
 
         // id of values
         uint8_t id_co2                      = 0;
-        boolean co2_i2c = false;// false if uart, true if i2c
+        uint8_t co2_type = 0;
+        // 0 is ExplorIR
+        // 1 is SCD30 I2C
+        // 2 is SCD30 UART
 
 
 };
